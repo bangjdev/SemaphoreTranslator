@@ -39,9 +39,6 @@ dependencies {
     implementation project(path: ':openCVLibrary343')
     implementation 'org.tensorflow:tensorflow-lite:+'
     implementation 'com.github.wseemann:FFmpegMediaMetadataRetriever-armeabi:1.0.14'
-    implementation 'com.github.wseemann:FFmpegMediaMetadataRetriever-armeabi-v7a:1.0.14'
-    implementation 'com.github.wseemann:FFmpegMediaMetadataRetriever-x86:1.0.14'
-    implementation 'com.github.wseemann:FFmpegMediaMetadataRetriever-mips:1.0.14'
-    implementation 'com.github.wseemann:FFmpegMediaMetadataRetriever-x86_64:1.0.14'
-    implementation 'com.github.wseemann:FFmpegMediaMetadataRetriever-arm64-v8a:1.0.14'
+    implementation 'org.tensorflow:tensorflow-lite:0.0.0-nightly'
+    implementation 'org.tensorflow:tensorflow-lite-gpu:0.0.0-nightly'
 }
