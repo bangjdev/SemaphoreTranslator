@@ -16,10 +16,8 @@ import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 
-public class PoseEstimator {
+class PoseEstimator {
 
     private static final int DIM_BATCH_SIZE = 1;
     private static final int PIXEL_SIZE = 3;
@@ -27,31 +25,25 @@ public class PoseEstimator {
     private static final int TENSOR_INPUT_SIZE_Y = 192;
     private static final int TENSOR_OUTPUT_SIZE_X = 48;
     private static final int TENSOR_OUTPUT_SIZE_Y = 48;
-    public static final int PARTS_COUNT = 14;
+    private static final int PARTS_COUNT = 14;
 
-    private static String model_path;
+    private Bitmap inputPhoto;
 
-    private static Map<String, Integer> PARTS_ID = new HashMap<>();
+    private Interpreter tfLite;
 
-    Bitmap inputPhoto;
+    private float[][][][] heatMap = new float[DIM_BATCH_SIZE][TENSOR_OUTPUT_SIZE_Y][TENSOR_OUTPUT_SIZE_X][PARTS_COUNT];
 
-    Interpreter tfLite;
+    private float[][][][] inputData;
 
-    float[][][][] heatMap = new float[DIM_BATCH_SIZE][TENSOR_OUTPUT_SIZE_Y][TENSOR_OUTPUT_SIZE_X][PARTS_COUNT];
-
-    float[][][][] inputData;
-
-    ArrayList<Point> keyPoints = new ArrayList<>();
-    Paint paint = new Paint();
-
-    Activity mainActivity;
+    private ArrayList<Point> keyPoints = new ArrayList<>();
+    private Paint paint = new Paint();
 
 
-    public void setInputData(float[][][][] inputData) {
+    void setInputData(float[][][][] inputData) {
         this.inputData = inputData;
     }
 
-    public PoseEstimator(Activity mainActivity, String model_path) {
+    PoseEstimator(Activity mainActivity, String model_path) {
         GpuDelegate delegate = new GpuDelegate();
         Interpreter.Options options = (new Interpreter.Options()).addDelegate(delegate);
         try {
@@ -60,8 +52,9 @@ public class PoseEstimator {
             e.printStackTrace();
         }
 
-        this.model_path = model_path;
-        this.mainActivity = mainActivity;
+
+        String model_path1 = model_path;
+        Activity mainActivity1 = mainActivity;
     }
 
     private MappedByteBuffer loadModelFile(Activity mainActivity, String modelPath) throws IOException {
@@ -73,7 +66,7 @@ public class PoseEstimator {
         return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
     }
 
-    Point getPosition(int partID, float[][][][] heatMap) {
+    private Point getPosition(int partID, float[][][][] heatMap) {
         Point res = new Point();
         int maxX = 0, maxY = 0;
 
@@ -124,14 +117,43 @@ public class PoseEstimator {
 
         float scale = outputSize / ((float) TENSOR_OUTPUT_SIZE_X);
 
-        for (Point part : keyPoints) {
-            drawCanvas.drawCircle(part.x * scale, part.y * scale, 50, paint);
-        }
+        paint.setStrokeWidth(scale);
+
+        drawSkeleton(drawCanvas, scale);
 
         return outputPhoto;
     }
 
+    void drawLine(Canvas drawCanvas, float scale, Point a, Point b) {
+        drawCanvas.drawLine((float) a.x * scale, (float) a.y * scale, (float) b.x * scale, (float) b.y * scale, paint);
+    }
+
+    void drawSkeleton(Canvas drawCanvas, float scale) {
+        for (Point part : keyPoints) {
+            drawCanvas.drawCircle(part.x * scale, part.y * scale, scale, paint);
+        }
+        drawLine(drawCanvas, scale, keyPoints.get(0), keyPoints.get(1));
+
+        for (int i = 2; i < 5; i++)
+            drawLine(drawCanvas, scale, keyPoints.get(i - 1), keyPoints.get(i));
+
+        drawLine(drawCanvas, scale, keyPoints.get(2), keyPoints.get(5));
+        drawLine(drawCanvas, scale, keyPoints.get(1), keyPoints.get(5));
+
+        for (int i = 6; i < 8; i++)
+            drawLine(drawCanvas, scale, keyPoints.get(i - 1), keyPoints.get(i));
+
+        drawLine(drawCanvas, scale, keyPoints.get(2), keyPoints.get(8));
+        drawLine(drawCanvas, scale, keyPoints.get(5), keyPoints.get(11));
+
+        for (int i = 9; i < 11; i ++)
+            drawLine(drawCanvas, scale, keyPoints.get(i - 1), keyPoints.get(i));
+        for (int i = 12; i < 14; i ++)
+            drawLine(drawCanvas, scale, keyPoints.get(i - 1), keyPoints.get(i));
+    }
+
     void createKeyPoints() {
+        keyPoints.clear();
         for (int part = 0; part < PARTS_COUNT; part++) {
             keyPoints.add(getPosition(part, heatMap));
         }
